@@ -11,7 +11,7 @@ public class User {
     private String email;
     private String password;
     private boolean enabled;
-    private String image;
+    private String image; // Stores the image URL
     private String name;
     private String academyId;
     private String departmentId; // References the Department document
@@ -21,13 +21,15 @@ public class User {
     public User() {
     }
 
-    public User(String email, String password, String name, String academyId, String departmentId, String roleId) {
+    public User(String email, String password, String name, String academyId,
+            String departmentId, String roleId, String image) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.academyId = academyId;
         this.departmentId = departmentId;
         this.roleId = roleId;
+        this.image = image; // Include image in constructor
     }
 
     // Getters and Setters
