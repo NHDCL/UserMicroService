@@ -14,9 +14,15 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.web.multipart.MultipartFile;
 
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import bt.nhdcl.usermicroservice.security.OtpDetails;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -25,20 +31,30 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final MongoTemplate mongoTemplate;
     private final CloudinaryService cloudinaryService;
+    private final JavaMailSender mailSender;
+    private Map<String, OtpDetails> otpStorage = new HashMap<>();
+
+    private static final int MAX_FILE_SIZE = 1024 * 1024; // 1MB
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            MongoTemplate mongoTemplate, CloudinaryService cloudinaryService) {
+            MongoTemplate mongoTemplate, CloudinaryService cloudinaryService, JavaMailSender mailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mongoTemplate = mongoTemplate;
         this.cloudinaryService = cloudinaryService;
+        this.mailSender = mailSender;
     }
 
     @Override
     public User save(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
+    }
+
+    @Override
+    public Optional<User> getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override
@@ -100,17 +116,114 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Uploaded image file is empty");
         }
 
-        if (image.getSize() > 1024 * 1024) { // 1MB limit
+        if (image.getSize() > MAX_FILE_SIZE) {
             throw new FileSizeException("File size must be < 1MB");
         }
 
-        // Upload image to Cloudinary in user_images folder
         String imageUrl = cloudinaryService.uploadImage(image, "user_images");
-
-        // Store the image URL in the user object
         user.setImage(imageUrl);
         userRepository.save(user);
 
-        return imageUrl; // Return uploaded image URL
+        return imageUrl;
     }
+
+    @Override
+    public String generateOtp(String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            throw new UserNotFoundException("No user found with email: " + email);
+        }
+
+        // Generate OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+
+        // Set expiration time (e.g., 10 minutes from now)
+        long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000);
+
+        // Store OTP with expiration
+        otpStorage.put(email, new OtpDetails(otp, expiryTime));
+
+        // Send OTP via email
+        sendOtpEmail(email, otp);
+        return otp;
+    }
+
+    @Override
+    public boolean validateOtp(String email, String otp) {
+        OtpDetails otpDetails = otpStorage.get(email); // Correct type
+
+        if (otpDetails == null) {
+            return false; // No OTP found for the email
+        }
+
+        // Check if OTP is expired
+        if (System.currentTimeMillis() > otpDetails.getExpiryTime()) {
+            otpStorage.remove(email); // Remove expired OTP
+            return false;
+        }
+
+        // Check if OTP matches
+        return otpDetails.getOtp().equals(otp);
+    }
+
+    @Override
+    public String resetPassword(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+        String encodedPassword = passwordEncoder.encode(newPassword);
+        user.setPassword(encodedPassword);
+        userRepository.save(user);
+        return "Password has been successfully reset.";
+    }
+
+    private void sendOtpEmail(String toEmail, String otp) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true);
+            helper.setTo(toEmail);
+            helper.setSubject("🔐 Your One-Time Password (OTP) for Secure Access");
+
+            String emailContent = "<div style='font-family: Arial, sans-serif; max-width: 600px; padding: 20px; " +
+                    "border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;'>" +
+                    "<h2 style='color: #897462;'>Hello,</h2>" +
+                    "<p style='font-size: 16px;'>You requested a one-time password (OTP) to verify your identity.</p>" +
+                    "<p style='font-size: 18px; font-weight: bold; color: #f9f9f9; text-align: center; " +
+                    "border: 1px solid #305845; padding: 10px; border-radius: 5px; background: #4a7f68;'>" + otp
+                    + "</p>" +
+                    "<p style='font-size: 14px; color: #555;'>Please use this OTP within the next 5 minutes. " +
+                    "Do not share this code with anyone.</p>" +
+                    "<p style='font-size: 14px;'>If you did not request this OTP, please ignore this email or contact our support team.</p>"
+                    +
+                    "<hr style='border: none; border-top: 1px solid #ddd;'/>" +
+                    "<p style='font-size: 12px; color: #777;'>Thank you,<br/><strong>NHDCL</strong></p>" +
+                    "</div>";
+
+            helper.setText(emailContent, true);
+            mailSender.send(message);
+            System.out.println("OTP email sent successfully to " + toEmail);
+        } catch (MessagingException e) {
+            System.err.println("Error sending OTP email: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public boolean changePassword(String email, String oldPassword, String newPassword) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+
+            // Check if old password matches
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                throw new IllegalArgumentException("Old password is incorrect.");
+            }
+
+            // Update password
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            return true;
+        }
+        throw new IllegalArgumentException("User not found.");
+    }
+
 }

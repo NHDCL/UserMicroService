@@ -2,9 +2,11 @@ package bt.nhdcl.usermicroservice.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import java.time.LocalDateTime;
 
 @Document(collection = "users") // Defines the MongoDB collection
 public class User {
+
     @Id
     private String userId; // MongoDB ID (stored as a String)
 
@@ -16,6 +18,9 @@ public class User {
     private String academyId;
     private String departmentId; // References the Department document
     private String roleId; // Stores the role ID (one-to-one relationship)
+
+    private String otp; // One-Time Password for resetting password
+    private LocalDateTime otpExpiry; // Expiry time for OTP
 
     // Constructors
     public User() {
@@ -29,7 +34,7 @@ public class User {
         this.academyId = academyId;
         this.departmentId = departmentId;
         this.roleId = roleId;
-        this.image = image; // Include image in constructor
+        this.image = image;
     }
 
     // Getters and Setters
@@ -103,5 +108,21 @@ public class User {
 
     public void setRoleId(String roleId) {
         this.roleId = roleId;
+    }
+
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
+    }
+
+    public LocalDateTime getOtpExpiry() {
+        return otpExpiry;
+    }
+
+    public void setOtpExpiry(LocalDateTime otpExpiry) {
+        this.otpExpiry = otpExpiry;
     }
 }

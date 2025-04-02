@@ -30,6 +30,7 @@ public class AcademyController {
     public ResponseEntity<Academy> createAcademy(
             @RequestParam("name") String name,
             @RequestParam("location") String location,
+            @RequestParam("description") String description,
             @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
             String image = null;
@@ -43,6 +44,7 @@ public class AcademyController {
             Academy academy = new Academy();
             academy.setName(name);
             academy.setLocation(location);
+            academy.setDescription(description);
             academy.setImage(image); // Setting the correct field
 
             Academy savedAcademy = academyService.addAcademy(academy);

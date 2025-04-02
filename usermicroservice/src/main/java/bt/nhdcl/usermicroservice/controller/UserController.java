@@ -41,7 +41,7 @@ public class UserController {
         try {
             String imageUrl = null;
 
-            // Upload image to Cloudinary under "user_images" folder
+            // Upload image to Cloudinary
             if (imageFile != null && !imageFile.isEmpty()) {
                 imageUrl = cloudinaryService.uploadUserImage(imageFile);
             }
@@ -104,4 +104,89 @@ public class UserController {
         userService.updateUserEnabledStatus(id, enabled);
         return ResponseEntity.ok().build();
     }
+
+    // Forgot Password - Generate OTP
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+        userService.generateOtp(email);
+        return ResponseEntity.ok("OTP sent to email.");
+    }
+
+    // Verify OTP
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+        String otp = requestBody.get("otp");
+        if (email == null || otp == null) {
+            return ResponseEntity.badRequest().body("Email and OTP are required");
+        }
+        boolean isValid = userService.validateOtp(email, otp);
+        return isValid ? ResponseEntity.ok("OTP is valid.") : ResponseEntity.badRequest().body("Invalid OTP.");
+    }
+
+    // Resend OTP
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+
+        if (email == null || email.isEmpty()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+
+        // Check if the user exists
+        Optional<User> userOptional = userService.getUserByEmail(email);
+        if (userOptional.isEmpty()) {
+            return ResponseEntity.badRequest().body("No user found with this email.");
+        }
+
+        // Generate and send a new OTP
+        userService.generateOtp(email);
+        return ResponseEntity.ok("New OTP sent successfully.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+        String otp = requestBody.get("otp");
+        String newPassword = requestBody.get("newPassword");
+
+        if (email == null || otp == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("Email, OTP, and new password are required");
+        }
+
+        // Validate OTP first
+        boolean isValidOtp = userService.validateOtp(email, otp);
+        if (!isValidOtp) {
+            return ResponseEntity.badRequest().body("Invalid OTP.");
+        }
+
+        // Proceed with password reset
+        String success = userService.resetPassword(email, newPassword);
+        return success != null ? ResponseEntity.ok("Password reset successful.")
+                : ResponseEntity.badRequest().body("Failed to reset password.");
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> requestBody) {
+        String email = requestBody.get("email");
+        String oldPassword = requestBody.get("oldPassword");
+        String newPassword = requestBody.get("newPassword");
+
+        if (email == null || oldPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("Email, old password, and new password are required.");
+        }
+
+        try {
+            boolean success = userService.changePassword(email, oldPassword, newPassword);
+            return success ? ResponseEntity.ok("Password changed successfully.")
+                    : ResponseEntity.badRequest().body("Password change failed.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
 }

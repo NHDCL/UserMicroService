@@ -9,11 +9,15 @@ import java.util.Optional;
 
 public interface UserService {
 
+    // Other existing methods...
+
     User save(User user);
 
     List<User> getAllUsers();
 
-    Optional<User> getUserById(String id); // MongoDB uses String for IDs
+    Optional<User> getUserById(String id);
+
+    Optional<User> getUserByEmail(String email);
 
     void deleteUserById(String id);
 
@@ -23,5 +27,14 @@ public interface UserService {
 
     void updateUserEnabledStatus(String id, boolean enabled);
 
-    String uploadUserImage(String id, MultipartFile image) throws IOException; // Returns image URL
+    String uploadUserImage(String id, MultipartFile image) throws IOException;
+
+    String generateOtp(String email);
+
+    boolean validateOtp(String email, String otp);
+
+    String resetPassword(String email, String newPassword);
+
+    boolean changePassword(String email, String oldPassword, String newPassword);
+
 }
