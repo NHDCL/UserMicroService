@@ -39,6 +39,12 @@ public class UserController {
             @RequestParam("roleId") @Valid @NotNull String roleId,
             @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
+
+            // Check if email already exists
+            if (userService.isEmailDuplicate(email)) {
+                return ResponseEntity.badRequest().body("Email is already in use.");
+            }
+
             String imageUrl = null;
 
             // Upload image to Cloudinary
