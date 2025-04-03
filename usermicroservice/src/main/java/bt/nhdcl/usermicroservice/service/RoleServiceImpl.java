@@ -33,6 +33,12 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public Optional<Role> getRoleByName(String name) {
+        // Ensure the repository has a method to find roles by name
+        return roleRepository.findByName(name);
+    }
+
+    @Override
     public void deleteRoleById(String id) {
         roleRepository.deleteById(id);
     }

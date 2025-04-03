@@ -7,17 +7,18 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class Role {
 
     @Id // MongoDB ID annotation
-    private String roleId; // Changed type to String (MongoDB stores ObjectId as String)
+    private String roleId; // MongoDB stores ObjectId as String
 
-    private String name;
-    private String description;
+    private String name; // Role name (can be 'Admin', 'User', etc.)
+    private String description; // Description of the role
 
     // Default constructor
     public Role() {
     }
 
     // Parameterized constructor
-    public Role(String name, String description) {
+    public Role(String roleId, String name, String description) {
+        this.roleId = roleId;
         this.name = name;
         this.description = description;
     }

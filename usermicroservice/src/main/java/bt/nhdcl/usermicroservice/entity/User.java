@@ -2,6 +2,8 @@ package bt.nhdcl.usermicroservice.entity;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+
 import java.time.LocalDateTime;
 
 @Document(collection = "users") // Defines the MongoDB collection
@@ -13,27 +15,29 @@ public class User {
     private String email;
     private String password;
     private boolean enabled;
-    private String image; // Stores the image URL
+    private String image;
     private String name;
     private String academyId;
-    private String departmentId; // References the Department document
-    private String roleId; // Stores the role ID (one-to-one relationship)
+    private String departmentId;
 
-    private String otp; // One-Time Password for resetting password
-    private LocalDateTime otpExpiry; // Expiry time for OTP
+    @DBRef // References the Role collection
+    private Role role; // Store Role object instead of just roleId
+
+    private String otp;
+    private LocalDateTime otpExpiry;
 
     // Constructors
     public User() {
     }
 
     public User(String email, String password, String name, String academyId,
-            String departmentId, String roleId, String image) {
+            String departmentId, Role role, String image) {
         this.email = email;
         this.password = password;
         this.name = name;
         this.academyId = academyId;
         this.departmentId = departmentId;
-        this.roleId = roleId;
+        this.role = role;
         this.image = image;
     }
 
@@ -102,12 +106,12 @@ public class User {
         this.departmentId = departmentId;
     }
 
-    public String getRoleId() {
-        return roleId;
+    public Role getRole() {
+        return role;
     }
 
-    public void setRoleId(String roleId) {
-        this.roleId = roleId;
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public String getOtp() {

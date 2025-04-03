@@ -1,6 +1,7 @@
 package bt.nhdcl.usermicroservice.security;
 
 import bt.nhdcl.usermicroservice.entity.User;
+import bt.nhdcl.usermicroservice.entity.Role; // Import the Role class
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,56 +20,52 @@ public class NhdclUserDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        // Assuming roles are stored in the user entity as roleId
-        // You would ideally fetch the role based on roleId from a database or another
-        // service
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
-        // Here, you can map the roleId to actual roles (for simplicity, we assume it's
-        // a role name)
-        authorities.add(new SimpleGrantedAuthority(user.getRoleId())); // Using roleId as authority
+        // Access the Role object and its roleId
+        Role role = user.getRole(); // Since user has a Role object, not a roleId
+
+        // Check if the role is not null, then fetch the roleId or roleName
+        if (role != null) {
+            authorities.add(new SimpleGrantedAuthority(role.getRoleId())); // Assuming roleId is a String
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_UNKNOWN")); // Default role if no role is set
+        }
 
         return authorities;
     }
 
     @Override
     public String getPassword() {
-        // Return the password stored in the User entity
         return user.getPassword();
     }
 
     @Override
     public String getUsername() {
-        // Return the email as the username
         return user.getEmail();
     }
 
     @Override
     public boolean isAccountNonExpired() {
-        // Here, we assume the account does not expire
         return true;
     }
 
     @Override
     public boolean isAccountNonLocked() {
-        // Here, we assume the account is not locked
         return true;
     }
 
     @Override
     public boolean isCredentialsNonExpired() {
-        // Here, we assume the credentials do not expire
         return true;
     }
 
     @Override
     public boolean isEnabled() {
-        // Return the enabled status from the User entity
         return user.isEnabled();
     }
 
     public String getUserId() {
-        // You can expose the userId if needed (e.g., for user-specific operations)
         return user.getUserId();
     }
 

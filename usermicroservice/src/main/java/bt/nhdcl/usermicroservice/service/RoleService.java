@@ -12,5 +12,7 @@ public interface RoleService {
 
     Optional<Role> getRoleById(String id);
 
+    Optional<Role> getRoleByName(String name); // Add this line
+
     void deleteRoleById(String id);
 }

@@ -27,8 +27,11 @@ public class NhdclUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // Check if the user has roles (using roleId in this case)
-        List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(user.getRoleId()));
+        // Create a list of authorities with both roleId and roleName
+        List<GrantedAuthority> authorities = List.of(
+                new SimpleGrantedAuthority(user.getRole().getRoleId()), // Role ID
+                new SimpleGrantedAuthority(user.getRole().getName()) // Role Name
+        );
 
         // Return Spring Security's User object with email, password, and authorities
         return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), authorities);

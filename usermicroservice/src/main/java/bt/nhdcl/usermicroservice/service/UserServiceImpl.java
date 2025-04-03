@@ -92,7 +92,12 @@ public class UserServiceImpl implements UserService {
 
             existingUser.setAcademyId(updatedUser.getAcademyId());
             existingUser.setDepartmentId(updatedUser.getDepartmentId());
-            existingUser.setRoleId(updatedUser.getRoleId());
+
+            // Update role reference (instead of roleId, update the Role object itself)
+            if (updatedUser.getRole() != null) {
+                existingUser.setRole(updatedUser.getRole()); // Set the Role object
+            }
+
             existingUser.setEnabled(updatedUser.isEnabled());
             existingUser.setImage(updatedUser.getImage());
 
@@ -225,5 +230,4 @@ public class UserServiceImpl implements UserService {
         }
         throw new IllegalArgumentException("User not found.");
     }
-
 }

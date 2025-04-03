@@ -1,13 +1,16 @@
 package bt.nhdcl.usermicroservice.controller;
 
 import bt.nhdcl.usermicroservice.entity.User;
+import bt.nhdcl.usermicroservice.entity.Role;
 import bt.nhdcl.usermicroservice.service.UserService;
+import bt.nhdcl.usermicroservice.service.RoleService; // Import RoleService
 import bt.nhdcl.usermicroservice.service.CloudinaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 
 import java.io.IOException;
@@ -20,40 +23,48 @@ import java.util.Optional;
 public class UserController {
 
     private final UserService userService;
+    private final RoleService roleService; // Inject RoleService to handle role lookup
     private final CloudinaryService cloudinaryService;
 
     @Autowired
-    public UserController(UserService userService, CloudinaryService cloudinaryService) {
+    public UserController(UserService userService, RoleService roleService, CloudinaryService cloudinaryService) {
         this.userService = userService;
+        this.roleService = roleService; // Initialize RoleService
         this.cloudinaryService = cloudinaryService;
     }
 
     // Create a new user with an image upload
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<?> createUser(
-            @RequestParam("email") @Valid @NotNull String email,
+            @RequestParam("email") @Valid @NotNull @Email String email, // Email validation
             @RequestParam("password") @Valid @NotNull String password,
             @RequestParam("name") @Valid @NotNull String name,
             @RequestParam("academyId") @Valid @NotNull String academyId,
             @RequestParam("departmentId") @Valid @NotNull String departmentId,
-            @RequestParam("roleId") @Valid @NotNull String roleId,
+            @RequestParam("roleId") @Valid @NotNull String roleId, // Accept roleId as input
             @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
-
             // Check if email already exists
             if (userService.isEmailDuplicate(email)) {
                 return ResponseEntity.badRequest().body("Email is already in use.");
             }
 
+            // Fetch the Role using roleId from the RoleService
+            Optional<Role> roleOptional = roleService.getRoleById(roleId);
+            if (roleOptional.isEmpty()) {
+                return ResponseEntity.badRequest().body("Role not found.");
+            }
+            Role role = roleOptional.get(); // Get the Role object
+
             String imageUrl = null;
 
-            // Upload image to Cloudinary
+            // Upload image to Cloudinary (if image is provided)
             if (imageFile != null && !imageFile.isEmpty()) {
                 imageUrl = cloudinaryService.uploadUserImage(imageFile);
             }
 
-            // Create and save the user
-            User user = new User(email, password, name, academyId, departmentId, roleId, imageUrl);
+            // Create and save the user with role and optional image
+            User user = new User(email, password, name, academyId, departmentId, role, imageUrl); // Set the Role object
             User savedUser = userService.save(user);
 
             return ResponseEntity.ok(savedUser);
@@ -95,8 +106,27 @@ public class UserController {
     // Update user details
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User updatedUser) {
+        // Extract roleId and roleName from updatedUser
+        String roleId = updatedUser.getRole().getRoleId();
+        String roleName = updatedUser.getRole().getName(); // Assuming getName() is the correct method for role name
+
+        // Assuming roleService gets the role based on roleId
+        Optional<Role> roleOptional = roleService.getRoleById(roleId);
+        if (roleOptional.isEmpty()) {
+            // Return a bad request response with an error message
+            return ResponseEntity.badRequest().body(null); // Return null in the body if the role is not found
+        }
+
+        // Get the Role object from roleService
+        Role role = roleOptional.get();
+        role.setName(roleName); // Set the roleName (if necessary)
+
+        // Set the updated role to the user
+        updatedUser.setRole(role);
+
+        // Now update the user
         User user = userService.updateUser(id, updatedUser);
-        return ResponseEntity.ok(user);
+        return ResponseEntity.ok(user); // Return the updated user object in the response
     }
 
     // Update user enabled status
