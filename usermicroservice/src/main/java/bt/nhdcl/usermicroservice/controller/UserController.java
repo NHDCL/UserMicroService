@@ -5,6 +5,8 @@ import bt.nhdcl.usermicroservice.entity.Role;
 import bt.nhdcl.usermicroservice.service.UserService;
 import bt.nhdcl.usermicroservice.service.RoleService; // Import RoleService
 import bt.nhdcl.usermicroservice.service.CloudinaryService;
+
+import org.apache.hc.core5.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -89,6 +91,24 @@ public class UserController {
         return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/email")
+    public ResponseEntity<Map<String, Object>> getUserByEmail(@RequestParam String email) {
+        if (email == null || email.isEmpty()) {
+            // Return a 400 Bad Request with a custom error message
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Email is required"));
+        }
+
+        Optional<User> userOptional = userService.getUserByEmail(email);
+        if (userOptional.isPresent()) {
+            return ResponseEntity.ok(Map.of("success", true, "user", userOptional.get()));
+        } else {
+            // Return a 404 Not Found if the user is not found
+            return ResponseEntity.notFound()
+                    .build();
+        }
+    }
+
     // Delete user
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
@@ -103,30 +123,35 @@ public class UserController {
         return ResponseEntity.ok(isDuplicate);
     }
 
-    // Update user details
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User updatedUser) {
-        // Extract roleId and roleName from updatedUser
-        String roleId = updatedUser.getRole().getRoleId();
-        String roleName = updatedUser.getRole().getName(); // Assuming getName() is the correct method for role name
+    @PutMapping("/image")
+    public ResponseEntity<String> updateUserImageByEmail(
+            @RequestParam("email") @Valid @NotNull @Email String email,
+            @RequestParam(value = "image", required = false) MultipartFile imageFile) {
+        try {
+            Optional<User> existingUserOptional = userService.getUserByEmail(email);
 
-        // Assuming roleService gets the role based on roleId
-        Optional<Role> roleOptional = roleService.getRoleById(roleId);
-        if (roleOptional.isEmpty()) {
-            // Return a bad request response with an error message
-            return ResponseEntity.badRequest().body(null); // Return null in the body if the role is not found
+            if (existingUserOptional.isEmpty()) {
+                return ResponseEntity.notFound().build(); // User not found
+            }
+
+            User existingUser = existingUserOptional.get();
+
+            // If an image file is provided, upload it to Cloudinary
+            String imageUrl = existingUser.getImage(); // Keep existing image URL if no new image is provided
+            if (imageFile != null && !imageFile.isEmpty()) {
+                imageUrl = cloudinaryService.uploadUserImage(imageFile); // Update image URL if new image is uploaded
+            }
+
+            // Update the user's image (keep other details unchanged)
+            existingUser.setImage(imageUrl);
+
+            // Save the updated user with the new image
+            userService.updateUser(existingUser.getUserId(), existingUser); // Save using user ID
+
+            return ResponseEntity.ok("User image updated successfully."); // Return a success message
+        } catch (IOException e) {
+            return ResponseEntity.internalServerError().body("Error uploading image: " + e.getMessage());
         }
-
-        // Get the Role object from roleService
-        Role role = roleOptional.get();
-        role.setName(roleName); // Set the roleName (if necessary)
-
-        // Set the updated role to the user
-        updatedUser.setRole(role);
-
-        // Now update the user
-        User user = userService.updateUser(id, updatedUser);
-        return ResponseEntity.ok(user); // Return the updated user object in the response
     }
 
     // Update user enabled status
@@ -146,42 +171,65 @@ public class UserController {
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> requestBody) {
         String email = requestBody.get("email");
         if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email is required");
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Email is required"));
         }
-        userService.generateOtp(email);
-        return ResponseEntity.ok("OTP sent to email.");
+
+        // Generate OTP and handle the result
+        boolean otpSent = userService.generateOtp(email); // Assuming this method returns true if OTP was sent
+                                                          // successfully
+
+        if (otpSent) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "OTP sent to email."));
+        } else {
+            return ResponseEntity.internalServerError()
+                    .body(Map.of("success", false, "message", "Failed to send OTP."));
+        }
     }
 
-    // Verify OTP
     @PostMapping("/verify-otp")
     public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> requestBody) {
         String email = requestBody.get("email");
         String otp = requestBody.get("otp");
         if (email == null || otp == null) {
-            return ResponseEntity.badRequest().body("Email and OTP are required");
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Email and OTP are required"));
         }
         boolean isValid = userService.validateOtp(email, otp);
-        return isValid ? ResponseEntity.ok("OTP is valid.") : ResponseEntity.badRequest().body("Invalid OTP.");
+        if (isValid) {
+            return ResponseEntity.ok(Map.of("success", true, "message", "OTP is valid."));
+        } else {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Invalid OTP."));
+        }
     }
 
-    // Resend OTP
     @PostMapping("/resend-otp")
-    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<Map<String, Object>> resendOtp(@RequestBody Map<String, String> requestBody) {
         String email = requestBody.get("email");
 
         if (email == null || email.isEmpty()) {
-            return ResponseEntity.badRequest().body("Email is required");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Email is required"));
         }
 
         // Check if the user exists
         Optional<User> userOptional = userService.getUserByEmail(email);
         if (userOptional.isEmpty()) {
-            return ResponseEntity.badRequest().body("No user found with this email.");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "No user found with this email."));
         }
 
         // Generate and send a new OTP
-        userService.generateOtp(email);
-        return ResponseEntity.ok("New OTP sent successfully.");
+        boolean otpSent = userService.generateOtp(email);
+        if (!otpSent) {
+            return ResponseEntity.internalServerError().body(Map.of(
+                    "success", false,
+                    "message", "Failed to generate OTP. Please try again later."));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "New OTP sent successfully."));
     }
 
     @PostMapping("/reset-password")
@@ -191,37 +239,61 @@ public class UserController {
         String newPassword = requestBody.get("newPassword");
 
         if (email == null || otp == null || newPassword == null) {
-            return ResponseEntity.badRequest().body("Email, OTP, and new password are required");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Email, OTP, and new password are required"));
         }
 
         // Validate OTP first
         boolean isValidOtp = userService.validateOtp(email, otp);
         if (!isValidOtp) {
-            return ResponseEntity.badRequest().body("Invalid OTP.");
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Invalid OTP."));
         }
 
         // Proceed with password reset
-        String success = userService.resetPassword(email, newPassword);
-        return success != null ? ResponseEntity.ok("Password reset successful.")
-                : ResponseEntity.badRequest().body("Failed to reset password.");
+        boolean success = userService.resetPassword(email, newPassword);
+        if (success) {
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "Password reset successful."));
+        } else {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", "Failed to reset password."));
+        }
     }
 
     @PutMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> requestBody) {
+    public ResponseEntity<Map<String, String>> changePassword(@RequestBody Map<String, String> requestBody) {
         String email = requestBody.get("email");
         String oldPassword = requestBody.get("oldPassword");
         String newPassword = requestBody.get("newPassword");
 
         if (email == null || oldPassword == null || newPassword == null) {
-            return ResponseEntity.badRequest().body("Email, old password, and new password are required.");
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", "Email, old password, and new password are required."));
         }
 
         try {
             boolean success = userService.changePassword(email, oldPassword, newPassword);
-            return success ? ResponseEntity.ok("Password changed successfully.")
-                    : ResponseEntity.badRequest().body("Password change failed.");
+            if (success) {
+                return ResponseEntity.ok(Map.of("message", "Password changed successfully."));
+            } else {
+                return ResponseEntity
+                        .badRequest()
+                        .body(Map.of("error", "Password change failed. Please check your credentials."));
+            }
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An unexpected error occurred."));
         }
     }
 

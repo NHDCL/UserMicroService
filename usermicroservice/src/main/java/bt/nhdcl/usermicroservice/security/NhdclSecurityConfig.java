@@ -46,8 +46,9 @@ public class NhdclSecurityConfig {
                         // Allow all operations on Users for Admin only
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/users/email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{id}").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/users/{id}").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/image").permitAll()
                         .requestMatchers(HttpMethod.DELETE, "/api/users/{id}").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/checkDuplicateEmail").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/{id}/enabled").permitAll()
@@ -78,7 +79,7 @@ public class NhdclSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/users/verify-otp").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/resend-otp").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/users/reset-password").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users/change-password").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/change-password").permitAll()
 
                         // Protect any other request that needs to be authenticated
                         .anyRequest().authenticated())

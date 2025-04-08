@@ -9,13 +9,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
+
     @Autowired
     private AuthService authService;
 
@@ -26,58 +26,39 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> login(@RequestBody User user, HttpServletResponse response) {
         UserDetails userDetails = authService.login(user.getEmail(), user.getPassword());
 
+        // Generate JWT
         String jwt = jwtUtil.generateToken(userDetails);
 
+        // Create and set JWT cookie
         Cookie jwtCookie = new Cookie("JWT-TOKEN", jwt);
         jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(true);
+        jwtCookie.setSecure(true); // ensure HTTPS
         jwtCookie.setPath("/");
         jwtCookie.setMaxAge(60 * 60); // 1 hour
-
         response.addCookie(jwtCookie);
 
+        // Prepare JSON response
         Map<String, Object> responseMap = new HashMap<>();
-        responseMap.put("jwt", jwt);
+        responseMap.put("token", jwt);
         responseMap.put("user", userDetails);
 
         return ResponseEntity.ok(responseMap);
     }
 
-    @PostMapping("/loginWithCookie")
-    public ResponseEntity<Map<String, Object>> loginWithCookie(@RequestBody User user, HttpServletResponse response) {
-        UserDetails userDetails = authService.login(user.getEmail(), user.getPassword());
-
-        String jwt = jwtUtil.generateToken(userDetails);
-
-        Cookie jwtCookie = new Cookie("JWT-TOKEN", jwt);
-        jwtCookie.setHttpOnly(true);
-        jwtCookie.setSecure(true);
-        jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(60 * 60); // 1 hour
-
-        response.addCookie(jwtCookie);
-
-        Map<String, Object> responseBody = new HashMap<>();
-        responseBody.put("user", userDetails);
-        return ResponseEntity.ok(responseBody);
-    }
-
     @PostMapping("/logout")
     public ResponseEntity<Map<String, String>> logout(HttpServletResponse response) {
-        // Expire the JWT cookie
+        // Expire JWT cookie
         Cookie jwtCookie = new Cookie("JWT-TOKEN", null);
-        jwtCookie.setMaxAge(0); // Set expiration to immediately remove it
-        jwtCookie.setPath("/"); // Ensure it's cleared for all paths
-        jwtCookie.setHttpOnly(true); // Prevent JavaScript access
-        jwtCookie.setSecure(true); // Send over HTTPS only
+        jwtCookie.setMaxAge(0);
+        jwtCookie.setPath("/");
+        jwtCookie.setHttpOnly(true);
+        jwtCookie.setSecure(true);
 
         response.addCookie(jwtCookie);
 
-        // Return logout success message
         Map<String, String> logoutResponse = new HashMap<>();
         logoutResponse.put("message", "Logout successful");
 
         return ResponseEntity.ok(logoutResponse);
     }
-
 }

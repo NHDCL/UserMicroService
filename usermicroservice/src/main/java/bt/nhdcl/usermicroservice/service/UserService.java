@@ -29,12 +29,13 @@ public interface UserService {
 
     String uploadUserImage(String id, MultipartFile image) throws IOException;
 
-    String generateOtp(String email);
+    boolean generateOtp(String email);
 
     boolean validateOtp(String email, String otp);
 
-    String resetPassword(String email, String newPassword);
+    boolean resetPassword(String email, String newPassword);
 
     boolean changePassword(String email, String oldPassword, String newPassword);
 
+    boolean resendOtp(String email);
 }

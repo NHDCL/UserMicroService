@@ -133,24 +133,28 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String generateOtp(String email) {
+    public boolean generateOtp(String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {
-            throw new UserNotFoundException("No user found with email: " + email);
+            return false; // Return false if user not found
         }
 
-        // Generate OTP
-        String otp = String.format("%06d", new Random().nextInt(999999));
+        try {
+            // Generate OTP
+            String otp = String.format("%06d", new Random().nextInt(999999));
 
-        // Set expiration time (e.g., 10 minutes from now)
-        long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000);
+            // Set expiration time (e.g., 5 minutes from now)
+            long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000);
 
-        // Store OTP with expiration
-        otpStorage.put(email, new OtpDetails(otp, expiryTime));
+            // Store OTP with expiration
+            otpStorage.put(email, new OtpDetails(otp, expiryTime));
 
-        // Send OTP via email
-        sendOtpEmail(email, otp);
-        return otp;
+            // Send OTP via email
+            sendOtpEmail(email, otp);
+            return true; // Return true if OTP was successfully generated and sent
+        } catch (Exception e) {
+            return false; // Return false if there was an error
+        }
     }
 
     @Override
@@ -172,13 +176,50 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String resetPassword(String email, String newPassword) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
-        String encodedPassword = passwordEncoder.encode(newPassword);
-        user.setPassword(encodedPassword);
-        userRepository.save(user);
-        return "Password has been successfully reset.";
+    public boolean resendOtp(String email) {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            return false; // Return false if user not found
+        }
+
+        try {
+            // Generate OTP
+            String otp = String.format("%06d", new Random().nextInt(999999));
+
+            // Set expiration time (e.g., 5 minutes from now)
+            long expiryTime = System.currentTimeMillis() + (5 * 60 * 1000);
+
+            // Store OTP with expiration
+            otpStorage.put(email, new OtpDetails(otp, expiryTime));
+
+            // Send OTP via email
+            sendOtpEmail(email, otp);
+            return true; // Return true if OTP was successfully generated and sent
+        } catch (Exception e) {
+            return false; // Return false if there was an error
+        }
+    }
+
+    @Override
+    public boolean resetPassword(String email, String newPassword) {
+        try {
+            // Find the user by email
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+
+            // Encode the new password and set it to the user
+            String encodedPassword = passwordEncoder.encode(newPassword);
+            user.setPassword(encodedPassword);
+
+            // Save the user with the updated password
+            userRepository.save(user);
+
+            // Return true if the password reset was successful
+            return true;
+        } catch (Exception e) {
+            // Handle any errors (e.g., user not found or database issues)
+            return false; // Return false if something goes wrong
+        }
     }
 
     private void sendOtpEmail(String toEmail, String otp) {
