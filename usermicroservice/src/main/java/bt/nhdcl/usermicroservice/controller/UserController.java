@@ -124,33 +124,39 @@ public class UserController {
     }
 
     @PutMapping("/image")
-    public ResponseEntity<String> updateUserImageByEmail(
+    public ResponseEntity<Map<String, String>> updateUserImageByEmail(
             @RequestParam("email") @Valid @NotNull @Email String email,
             @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
             Optional<User> existingUserOptional = userService.getUserByEmail(email);
 
             if (existingUserOptional.isEmpty()) {
-                return ResponseEntity.notFound().build(); // User not found
+                return ResponseEntity
+                        .status(HttpStatus.SC_NOT_FOUND)
+                        .body(Map.of("error", "User not found."));
             }
 
             User existingUser = existingUserOptional.get();
 
-            // If an image file is provided, upload it to Cloudinary
-            String imageUrl = existingUser.getImage(); // Keep existing image URL if no new image is provided
+            // Keep existing image URL unless new one is provided
+            String imageUrl = existingUser.getImage();
             if (imageFile != null && !imageFile.isEmpty()) {
-                imageUrl = cloudinaryService.uploadUserImage(imageFile); // Update image URL if new image is uploaded
+                imageUrl = cloudinaryService.uploadUserImage(imageFile);
             }
 
-            // Update the user's image (keep other details unchanged)
+            // Update user image
             existingUser.setImage(imageUrl);
+            userService.updateUser(existingUser.getUserId(), existingUser);
 
-            // Save the updated user with the new image
-            userService.updateUser(existingUser.getUserId(), existingUser); // Save using user ID
-
-            return ResponseEntity.ok("User image updated successfully."); // Return a success message
+            return ResponseEntity.ok(Map.of("message", "User image updated successfully."));
         } catch (IOException e) {
-            return ResponseEntity.internalServerError().body("Error uploading image: " + e.getMessage());
+            return ResponseEntity
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error uploading image: " + e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.SC_INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Unexpected error: " + e.getMessage()));
         }
     }
 

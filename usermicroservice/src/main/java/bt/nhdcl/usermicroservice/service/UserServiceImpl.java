@@ -83,22 +83,6 @@ public class UserServiceImpl implements UserService {
     @Override
     public User updateUser(String id, User updatedUser) {
         return userRepository.findById(id).map(existingUser -> {
-            existingUser.setName(updatedUser.getName());
-            existingUser.setEmail(updatedUser.getEmail());
-
-            if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
-                existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
-            }
-
-            existingUser.setAcademyId(updatedUser.getAcademyId());
-            existingUser.setDepartmentId(updatedUser.getDepartmentId());
-
-            // Update role reference (instead of roleId, update the Role object itself)
-            if (updatedUser.getRole() != null) {
-                existingUser.setRole(updatedUser.getRole()); // Set the Role object
-            }
-
-            existingUser.setEnabled(updatedUser.isEnabled());
             existingUser.setImage(updatedUser.getImage());
 
             return userRepository.save(existingUser);

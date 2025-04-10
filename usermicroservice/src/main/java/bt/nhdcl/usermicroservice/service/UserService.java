@@ -23,7 +23,7 @@ public interface UserService {
 
     boolean isEmailDuplicate(String email);
 
-    User updateUser(String id, User updatedUser);
+    // User updateUser(String id, User updatedUser);
 
     void updateUserEnabledStatus(String id, boolean enabled);
 
@@ -38,4 +38,6 @@ public interface UserService {
     boolean changePassword(String email, String oldPassword, String newPassword);
 
     boolean resendOtp(String email);
+
+    User updateUser(String id, User updatedUser);
 }

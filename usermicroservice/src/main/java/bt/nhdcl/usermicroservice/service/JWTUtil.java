@@ -18,6 +18,10 @@ public class JWTUtil {
         return extractClaim(token, Claims::getSubject);
     }
 
+    public String extractEmailFromToken(String token) {
+        return extractClaim(token, claims -> claims.get("email", String.class));
+    }
+
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -38,13 +42,13 @@ public class JWTUtil {
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", userDetails.getAuthorities());
+        claims.put("email", userDetails.getUsername()); // Store email as a claim
         return createToken(claims, userDetails.getUsername());
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 *
-                        10)) // 10 hours
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
     }
 
