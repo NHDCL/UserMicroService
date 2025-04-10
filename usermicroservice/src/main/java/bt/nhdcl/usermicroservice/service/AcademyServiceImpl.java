@@ -1,9 +1,11 @@
 package bt.nhdcl.usermicroservice.service;
 
 import bt.nhdcl.usermicroservice.entity.Academy;
+import bt.nhdcl.usermicroservice.entity.User;
 import bt.nhdcl.usermicroservice.repository.AcademyRepository;
 import bt.nhdcl.usermicroservice.exception.AcademyNotFoundException;
 import bt.nhdcl.usermicroservice.exception.FileSizeException;
+import bt.nhdcl.usermicroservice.exception.UserNotFoundException;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
@@ -76,5 +78,17 @@ public class AcademyServiceImpl implements AcademyService {
         } catch (IOException e) {
             throw new IOException("Error uploading image to Cloudinary", e);
         }
+    }
+
+    @Override
+    public Academy updateAcademy(String id, Academy updatedAcademy) {
+        return academyRepository.findById(id).map(existingAcademy -> {
+            existingAcademy.setName(updatedAcademy.getName());
+            existingAcademy.setLocation(updatedAcademy.getLocation());
+            existingAcademy.setImage(updatedAcademy.getImage());
+            existingAcademy.setDescription(updatedAcademy.getDescription());
+
+            return academyRepository.save(existingAcademy);
+        }).orElseThrow(() -> new AcademyNotFoundException("Academy not found with id: " + id));
     }
 }

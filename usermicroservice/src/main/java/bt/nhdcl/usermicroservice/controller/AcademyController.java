@@ -1,12 +1,19 @@
 package bt.nhdcl.usermicroservice.controller;
 
 import bt.nhdcl.usermicroservice.entity.Academy;
+import bt.nhdcl.usermicroservice.entity.Role;
+import bt.nhdcl.usermicroservice.entity.User;
 import bt.nhdcl.usermicroservice.service.AcademyService;
 import bt.nhdcl.usermicroservice.service.CloudinaryService;
+import jakarta.validation.constraints.NotNull;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -73,5 +80,40 @@ public class AcademyController {
     public ResponseEntity<Void> deleteAcademy(@PathVariable String id) {
         academyService.deleteAcademyById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // // Update academy details
+    // @PutMapping("/{id}")
+    // public ResponseEntity<Academy> updateAcademy(@PathVariable String id,
+    // @RequestBody Academy updatedAcademy) {
+    // // Extract roleId and roleName from updatedUser
+    // String name = updatedAcademy.getName(); // Assuming getName() is the
+
+    // // Now update the user
+    // Academy academy = academyService.updateAcademy(id, updatedAcademy);
+    // return ResponseEntity.ok(academy); // Return the updated user object in the
+    // }
+
+    @PutMapping(value = "/{id}", consumes = "multipart/form-data")
+    public ResponseEntity<Academy> updateAcademy(
+            @PathVariable String id,
+            @RequestParam("name") String name,
+            @RequestParam("location") String location,
+            @RequestParam("description") String description,
+            @RequestParam(value = "image", required = false) MultipartFile imageFile) throws IOException {
+
+        // Build Academy object from form-data
+        Academy updatedAcademy = new Academy();
+        updatedAcademy.setName(name);
+        updatedAcademy.setLocation(location);
+        updatedAcademy.setDescription(description);
+
+        if (imageFile != null && !imageFile.isEmpty()) {
+            String imageUrl = cloudinaryService.uploadAcademyImage(imageFile);
+            updatedAcademy.setImage(imageUrl);
+        }
+
+        Academy academy = academyService.updateAcademy(id, updatedAcademy);
+        return ResponseEntity.ok(academy);
     }
 }

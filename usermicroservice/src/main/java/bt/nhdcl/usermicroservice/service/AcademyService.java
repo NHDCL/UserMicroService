@@ -1,6 +1,8 @@
 package bt.nhdcl.usermicroservice.service;
 
 import bt.nhdcl.usermicroservice.entity.Academy;
+import bt.nhdcl.usermicroservice.entity.User;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -17,4 +19,6 @@ public interface AcademyService {
     void deleteAcademyById(String id);
 
     String uploadAcademyImage(String id, MultipartFile image) throws IOException;
+
+    Academy updateAcademy(String id, Academy updatedAcademy);
 }
