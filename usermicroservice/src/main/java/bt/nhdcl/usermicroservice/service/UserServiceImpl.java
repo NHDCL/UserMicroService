@@ -14,6 +14,8 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.mongodb.client.result.UpdateResult;
+
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import jakarta.mail.MessagingException;
@@ -59,7 +61,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findByEnabledTrue();
     }
 
     @Override
@@ -69,10 +71,20 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUserById(String id) {
+        // Check if the user exists
         if (!userRepository.existsById(id)) {
             throw new UserNotFoundException("User not found with id: " + id);
         }
-        userRepository.deleteById(id);
+
+        // Find the user and set the 'enabled' flag to false (soft delete)
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + id));
+
+        // Perform soft delete by disabling the user
+        user.setEnabled(false);
+
+        // Save the user with updated enabled status
+        userRepository.save(user);
     }
 
     @Override
@@ -93,7 +105,12 @@ public class UserServiceImpl implements UserService {
     public void updateUserEnabledStatus(String id, boolean enabled) {
         Query query = new Query(Criteria.where("_id").is(id));
         Update update = new Update().set("enabled", enabled);
-        mongoTemplate.updateFirst(query, update, User.class);
+
+        UpdateResult result = mongoTemplate.updateFirst(query, update, User.class);
+
+        if (result.getMatchedCount() == 0) {
+            throw new UserNotFoundException("User not found with id: " + id);
+        }
     }
 
     @Override

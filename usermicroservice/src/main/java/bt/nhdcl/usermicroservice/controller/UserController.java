@@ -1,10 +1,12 @@
 package bt.nhdcl.usermicroservice.controller;
 
 import bt.nhdcl.usermicroservice.entity.User;
+import bt.nhdcl.usermicroservice.exception.UserNotFoundException;
 import bt.nhdcl.usermicroservice.entity.Role;
 import bt.nhdcl.usermicroservice.service.UserService;
-import bt.nhdcl.usermicroservice.service.RoleService; // Import RoleService
+import bt.nhdcl.usermicroservice.service.RoleService;
 import bt.nhdcl.usermicroservice.service.CloudinaryService;
+import bt.nhdcl.usermicroservice.service.EmailService; // Add email service
 
 import org.apache.hc.core5.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,25 +27,29 @@ import java.util.Optional;
 public class UserController {
 
     private final UserService userService;
-    private final RoleService roleService; // Inject RoleService to handle role lookup
+    private final RoleService roleService;
     private final CloudinaryService cloudinaryService;
+    private final EmailService emailService; // Inject EmailService
+    private static final String DEFAULT_PASSWORD = "Password"; // Define default password constant
 
     @Autowired
-    public UserController(UserService userService, RoleService roleService, CloudinaryService cloudinaryService) {
+    public UserController(UserService userService, RoleService roleService,
+            CloudinaryService cloudinaryService, EmailService emailService) {
         this.userService = userService;
-        this.roleService = roleService; // Initialize RoleService
+        this.roleService = roleService;
         this.cloudinaryService = cloudinaryService;
+        this.emailService = emailService; // Initialize EmailService
     }
 
     // Create a new user with an image upload
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<?> createUser(
-            @RequestParam("email") @Valid @NotNull @Email String email, // Email validation
+            @RequestParam("email") @Valid @NotNull @Email String email,
             @RequestParam("password") @Valid @NotNull String password,
             @RequestParam("name") @Valid @NotNull String name,
             @RequestParam("academyId") @Valid @NotNull String academyId,
             @RequestParam("departmentId") @Valid @NotNull String departmentId,
-            @RequestParam("roleId") @Valid @NotNull String roleId, // Accept roleId as input
+            @RequestParam("roleId") @Valid @NotNull String roleId,
             @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
             // Check if email already exists
@@ -56,7 +62,7 @@ public class UserController {
             if (roleOptional.isEmpty()) {
                 return ResponseEntity.badRequest().body("Role not found.");
             }
-            Role role = roleOptional.get(); // Get the Role object
+            Role role = roleOptional.get();
 
             String imageUrl = null;
 
@@ -66,8 +72,32 @@ public class UserController {
             }
 
             // Create and save the user with role and optional image
-            User user = new User(email, password, name, academyId, departmentId, role, imageUrl); // Set the Role object
+            User user = new User(email, password, name, academyId, departmentId, role, imageUrl);
+            user.setEnabled(true);
             User savedUser = userService.save(user);
+
+            String subject = "🎉 Account Created - Welcome to the System";
+
+            String message = "<div style='font-family: Arial, sans-serif; max-width: 600px; padding: 20px; " +
+                    "border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;'>" +
+                    "<h2 style='color: #4A7F68;'>Welcome, " + name + "!</h2>" +
+                    "<p>We are pleased to inform you that your account has been successfully created.</p>" +
+                    "<p style='font-size: 16px;'>Your <strong>Temporary Password</strong> is:</p>" +
+                    "<div style='font-size: 18px; font-weight: bold; color: #ffffff; background: #4A7F68; " +
+                    "padding: 10px; border-radius: 5px; text-align: center;'>" + password + "</div>" +
+                    "<p>Please log in using the above credentials and update your password at your earliest convenience to ensure your account remains secure.</p>"
+                    +
+                    "<p>If you encounter any issues or have questions, feel free to contact our support team.</p>" +
+                    "<hr style='border: none; border-top: 1px solid #ddd;'/>" +
+                    "<p style='font-size: 14px; color: #777;'>Best regards,<br/><strong>Admin Team</strong></p>" +
+                    "</div>";
+
+            boolean emailSent = emailService.sendEmail(email, subject, message);
+
+            if (!emailSent) {
+                // Log the failure but don't prevent user creation
+                System.err.println("Failed to send welcome email to " + email);
+            }
 
             return ResponseEntity.ok(savedUser);
         } catch (IllegalArgumentException e) {
@@ -84,11 +114,15 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
 
-    // Get user by ID
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable String id) {
-        Optional<User> user = userService.getUserById(id);
-        return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> softDeleteUser(@PathVariable String id) {
+        try {
+            // Call the soft delete service method
+            userService.deleteUserById(id);
+            return ResponseEntity.noContent().build(); // 204 No Content
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/email")
@@ -107,13 +141,6 @@ public class UserController {
             return ResponseEntity.notFound()
                     .build();
         }
-    }
-
-    // Delete user
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
-        userService.deleteUserById(id);
-        return ResponseEntity.noContent().build();
     }
 
     // Check if an email is duplicate
@@ -166,10 +193,18 @@ public class UserController {
             @RequestBody Map<String, Boolean> requestBody) {
         Boolean enabled = requestBody.get("enabled");
         if (enabled == null) {
-            return ResponseEntity.badRequest().body("Missing 'enabled' field in request");
+            // Return a failure response with success: false
+            return ResponseEntity.badRequest()
+                    .body(Map.of("success", false, "message", "Missing 'enabled' field in request"));
         }
-        userService.updateUserEnabledStatus(id, enabled);
-        return ResponseEntity.ok().build();
+        try {
+            userService.updateUserEnabledStatus(id, enabled);
+            // Return a success message with success: true
+            return ResponseEntity.ok().body(Map.of("success", true));
+        } catch (UserNotFoundException e) {
+            // Return a failure response if the user is not found
+            return ResponseEntity.status(404).body(Map.of("success", false, "message", e.getMessage()));
+        }
     }
 
     // Forgot Password - Generate OTP
@@ -181,8 +216,7 @@ public class UserController {
         }
 
         // Generate OTP and handle the result
-        boolean otpSent = userService.generateOtp(email); // Assuming this method returns true if OTP was sent
-                                                          // successfully
+        boolean otpSent = userService.generateOtp(email);
 
         if (otpSent) {
             return ResponseEntity.ok(Map.of("success", true, "message", "OTP sent to email."));
@@ -302,5 +336,4 @@ public class UserController {
                     .body(Map.of("error", "An unexpected error occurred."));
         }
     }
-
 }
