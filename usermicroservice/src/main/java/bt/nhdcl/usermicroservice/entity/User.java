@@ -11,6 +11,7 @@ public class User {
 
     @Id
     private String userId; // MongoDB ID (stored as a String)
+    private String employeeId;
 
     private String email;
     private String password;
@@ -30,11 +31,12 @@ public class User {
     public User() {
     }
 
-    public User(String email, String password, String name, String academyId,
+    public User(String email, String password, String name, String employeeId, String academyId,
             String departmentId, Role role, String image) {
         this.email = email;
         this.password = password;
         this.name = name;
+        this.employeeId = employeeId;
         this.academyId = academyId;
         this.departmentId = departmentId;
         this.role = role;
@@ -48,6 +50,14 @@ public class User {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getEmployeeId() {
+        return employeeId;
+    }
+
+    public void setEmployeeId(String employeeId) {
+        this.employeeId = employeeId;
     }
 
     public String getEmail() {

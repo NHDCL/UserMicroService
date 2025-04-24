@@ -47,6 +47,7 @@ public class UserController {
             @RequestParam("email") @Valid @NotNull @Email String email,
             @RequestParam("password") @Valid @NotNull String password,
             @RequestParam("name") @Valid @NotNull String name,
+            @RequestParam("employeeId") @Valid @NotNull String employeeId,
             @RequestParam("academyId") @Valid @NotNull String academyId,
             @RequestParam("departmentId") @Valid @NotNull String departmentId,
             @RequestParam("roleId") @Valid @NotNull String roleId,
@@ -72,7 +73,7 @@ public class UserController {
             }
 
             // Create and save the user with role and optional image
-            User user = new User(email, password, name, academyId, departmentId, role, imageUrl);
+            User user = new User(email, password, name, employeeId, academyId, departmentId, role, imageUrl);
             user.setEnabled(true);
             User savedUser = userService.save(user);
 
@@ -89,7 +90,7 @@ public class UserController {
                     +
                     "<p>If you encounter any issues or have questions, feel free to contact our support team.</p>" +
                     "<hr style='border: none; border-top: 1px solid #ddd;'/>" +
-                    "<p style='font-size: 14px; color: #777;'>Best regards,<br/><strong>Admin Team</strong></p>" +
+                    "<p style='font-size: 14px; color: #777;'>Best regards,<br/><strong>NHDCL</strong></p>" +
                     "</div>";
 
             boolean emailSent = emailService.sendEmail(email, subject, message);
