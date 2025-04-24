@@ -58,6 +58,11 @@ public class UserController {
                 return ResponseEntity.badRequest().body("Email is already in use.");
             }
 
+            // Check if employeeId already exists
+            if (userService.isEmployeeIdDuplicate(employeeId)) {
+                return ResponseEntity.badRequest().body("Employee ID is already in use.");
+            }
+
             // Fetch the Role using roleId from the RoleService
             Optional<Role> roleOptional = roleService.getRoleById(roleId);
             if (roleOptional.isEmpty()) {

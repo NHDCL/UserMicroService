@@ -40,4 +40,7 @@ public interface UserService {
     boolean resendOtp(String email);
 
     User updateUser(String id, User updatedUser);
+
+    boolean isEmployeeIdDuplicate(String employeeId);
+
 }

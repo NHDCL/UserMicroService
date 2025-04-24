@@ -133,6 +133,10 @@ public class UserServiceImpl implements UserService {
         return imageUrl;
     }
 
+    public boolean isEmployeeIdDuplicate(String employeeId) {
+        return userRepository.existsByEmployeeId(employeeId);
+    }
+
     @Override
     public boolean generateOtp(String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
