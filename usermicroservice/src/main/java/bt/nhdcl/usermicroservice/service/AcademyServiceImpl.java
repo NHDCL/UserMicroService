@@ -82,13 +82,27 @@ public class AcademyServiceImpl implements AcademyService {
 
     @Override
     public Academy updateAcademy(String id, Academy updatedAcademy) {
-        return academyRepository.findById(id).map(existingAcademy -> {
-            existingAcademy.setName(updatedAcademy.getName());
-            existingAcademy.setLocation(updatedAcademy.getLocation());
-            existingAcademy.setImage(updatedAcademy.getImage());
-            existingAcademy.setDescription(updatedAcademy.getDescription());
+        // Get the academy as Optional and unwrap it
+        Optional<Academy> existingAcademyOpt = getAcademyById(id);
 
-            return academyRepository.save(existingAcademy);
-        }).orElseThrow(() -> new AcademyNotFoundException("Academy not found with id: " + id));
+        // Verify the academy exists (you could throw a custom exception here)
+        if (existingAcademyOpt.isEmpty()) {
+            throw new RuntimeException("Academy not found with id: " + id);
+        }
+
+        // Unwrap the Optional to get the actual Academy object
+        Academy existingAcademy = existingAcademyOpt.get();
+
+        // Update only the provided fields
+        existingAcademy.setName(updatedAcademy.getName());
+        existingAcademy.setLocation(updatedAcademy.getLocation());
+        existingAcademy.setDescription(updatedAcademy.getDescription());
+
+        // Only update image if a new one is provided
+        if (updatedAcademy.getImage() != null) {
+            existingAcademy.setImage(updatedAcademy.getImage());
+        }
+
+        return academyRepository.save(existingAcademy);
     }
 }

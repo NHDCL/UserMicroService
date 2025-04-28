@@ -102,15 +102,30 @@ public class AcademyController {
             @RequestParam("description") String description,
             @RequestParam(value = "image", required = false) MultipartFile imageFile) throws IOException {
 
+        // Get existing academy first and handle the Optional
+        Optional<Academy> existingAcademyOpt = academyService.getAcademyById(id);
+
+        // If the academy doesn't exist, return 404 Not Found
+        if (existingAcademyOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Get the actual Academy object from the Optional
+        Academy existingAcademy = existingAcademyOpt.get();
+
         // Build Academy object from form-data
         Academy updatedAcademy = new Academy();
         updatedAcademy.setName(name);
         updatedAcademy.setLocation(location);
         updatedAcademy.setDescription(description);
 
+        // Keep the existing image if no new image is uploaded
         if (imageFile != null && !imageFile.isEmpty()) {
             String imageUrl = cloudinaryService.uploadAcademyImage(imageFile);
             updatedAcademy.setImage(imageUrl);
+        } else {
+            // Preserve the existing image URL from the unwrapped Academy object
+            updatedAcademy.setImage(existingAcademy.getImage());
         }
 
         Academy academy = academyService.updateAcademy(id, updatedAcademy);
