@@ -61,4 +61,11 @@ public class AuthController {
 
         return ResponseEntity.ok(logoutResponse);
     }
+
+    @PostMapping("/keep-alive")
+    public ResponseEntity<Map<String, String>> keepAlive() {
+        Map<String, String> response = new HashMap<>();
+        response.put("status", "active");
+        return ResponseEntity.ok(response);
+    }
 }

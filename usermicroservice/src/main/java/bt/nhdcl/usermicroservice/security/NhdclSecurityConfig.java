@@ -42,6 +42,7 @@ public class NhdclSecurityConfig {
                         // Allow login endpoint for all
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/keep-alive").permitAll()
 
                         // Allow all operations on Users for Admin only
                         .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
