@@ -34,7 +34,7 @@ public class AuthController {
         jwtCookie.setHttpOnly(true);
         jwtCookie.setSecure(true); // ensure HTTPS
         jwtCookie.setPath("/");
-        jwtCookie.setMaxAge(60 * 60); // 1 hour
+        jwtCookie.setMaxAge((int) (jwtUtil.getTokenExpiration() / 1000));
         response.addCookie(jwtCookie);
 
         // Prepare JSON response

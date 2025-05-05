@@ -3,12 +3,17 @@ package bt.nhdcl.usermicroservice.service;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import java.security.Key;
 
 @Service
 public class JWTUtil {
@@ -39,6 +44,8 @@ public class JWTUtil {
         return extractExpiration(token).before(new Date());
     }
 
+    private final long TOKEN_EXPIRATION = 1800000;
+
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("roles", userDetails.getAuthorities());
@@ -47,9 +54,25 @@ public class JWTUtil {
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY).compact();
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + TOKEN_EXPIRATION))
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    private Key getSigningKey() {
+        // You should replace this with your own secret key
+        // The secret should be at least 256 bits long for HS256
+        String secret = SECRET_KEY;
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    public long getTokenExpiration() {
+        return TOKEN_EXPIRATION;
     }
 
     public Boolean validateToken(String token, UserDetails userDetails) {
