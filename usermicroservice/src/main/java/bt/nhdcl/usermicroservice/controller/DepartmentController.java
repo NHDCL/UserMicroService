@@ -43,4 +43,22 @@ public class DepartmentController {
         departmentService.deleteDepartmentById(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Department> updateDepartment(@PathVariable String id,
+            @RequestBody Department updatedDepartment) {
+        Optional<Department> existingDepartment = departmentService.getDepartmentById(id);
+
+        if (existingDepartment.isPresent()) {
+            Department department = existingDepartment.get();
+            department.setName(updatedDepartment.getName()); // Update fields as needed
+            department.setDescription(updatedDepartment.getDescription()); // Example field
+
+            Department savedDepartment = departmentService.addDepartment(department); // Assuming addDepartment handles
+                                                                                      // both create and update
+            return ResponseEntity.ok(savedDepartment);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
+    }
 }

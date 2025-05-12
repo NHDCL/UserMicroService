@@ -22,14 +22,13 @@ public class NhdclUserDetails implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         List<SimpleGrantedAuthority> authorities = new ArrayList<>();
 
-        // Access the Role object and its roleId
-        Role role = user.getRole(); // Since user has a Role object, not a roleId
+        Role role = user.getRole();
 
-        // Check if the role is not null, then fetch the roleId or roleName
         if (role != null) {
-            authorities.add(new SimpleGrantedAuthority(role.getRoleId())); // Assuming roleId is a String
+            authorities.add(new SimpleGrantedAuthority(role.getRoleId())); // e.g. "67ee..."
+            authorities.add(new SimpleGrantedAuthority(role.getName())); // e.g. "Admin"
         } else {
-            authorities.add(new SimpleGrantedAuthority("ROLE_UNKNOWN")); // Default role if no role is set
+            authorities.add(new SimpleGrantedAuthority("ROLE_UNKNOWN"));
         }
 
         return authorities;
