@@ -138,6 +138,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void permanentlyDeleteUser(String userId) {
+        userRepository.deleteById(userId);
+    }
+
+    @Override
     public boolean generateOtp(String email) {
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isEmpty()) {

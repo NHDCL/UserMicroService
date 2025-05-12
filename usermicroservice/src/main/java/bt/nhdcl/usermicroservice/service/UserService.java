@@ -43,4 +43,6 @@ public interface UserService {
 
     boolean isEmployeeIdDuplicate(String employeeId);
 
+    void permanentlyDeleteUser(String userId);
+
 }

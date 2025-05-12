@@ -31,6 +31,7 @@ public class NhdclUserDetailsService implements UserDetailsService {
         List<GrantedAuthority> authorities = List.of(
                 new SimpleGrantedAuthority(user.getRole().getRoleId()), // Role ID
                 new SimpleGrantedAuthority(user.getRole().getName()) // Role Name
+
         );
 
         // Return Spring Security's User object with email, password, and authorities

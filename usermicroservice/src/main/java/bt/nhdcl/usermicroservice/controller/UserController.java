@@ -53,9 +53,17 @@ public class UserController {
             @RequestParam("roleId") @Valid @NotNull String roleId,
             @RequestParam(value = "image", required = false) MultipartFile imageFile) {
         try {
-            // Check if email already exists
-            if (userService.isEmailDuplicate(email)) {
-                return ResponseEntity.badRequest().body("Email is already in use.");
+            // Check if email already exists and user is ACTIVE
+            Optional<User> existingUserOpt = userService.getUserByEmail(email);
+            if (existingUserOpt.isPresent()) {
+                User existingUser = existingUserOpt.get();
+                if (existingUser.isEnabled()) {
+                    // User exists and is active - reject registration
+                    return ResponseEntity.badRequest().body("Email is already in use by an active user.");
+                } else {
+                    // User exists but is soft-deleted - hard delete them to allow re-registration
+                    userService.permanentlyDeleteUser(existingUser.getUserId());
+                }
             }
 
             // Check if employeeId already exists
@@ -152,7 +160,9 @@ public class UserController {
     // Check if an email is duplicate
     @GetMapping("/checkDuplicateEmail")
     public ResponseEntity<Boolean> checkDuplicateEmail(@RequestParam String email) {
-        boolean isDuplicate = userService.isEmailDuplicate(email);
+        // Only check for ACTIVE users with this email
+        Optional<User> userOptional = userService.getUserByEmail(email);
+        boolean isDuplicate = userOptional.isPresent() && userOptional.get().isEnabled();
         return ResponseEntity.ok(isDuplicate);
     }
 
