@@ -7,10 +7,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @Configuration
@@ -19,6 +19,9 @@ public class NhdclSecurityConfig {
 
     @Autowired
     private NhdclUserDetailsService userDetailsService;
+
+    @Autowired
+    private JwtRequestFilter jwtRequestFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -86,6 +89,7 @@ public class NhdclSecurityConfig {
                         .anyRequest().authenticated())
                 .httpBasic(httpBasic -> httpBasic.disable()) // Disable HTTP Basic Auth
                 .formLogin(form -> form.disable()); // Disable login form
+        http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
