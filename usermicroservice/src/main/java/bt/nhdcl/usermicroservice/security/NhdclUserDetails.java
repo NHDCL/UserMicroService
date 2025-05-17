@@ -25,8 +25,7 @@ public class NhdclUserDetails implements UserDetails {
         Role role = user.getRole();
 
         if (role != null) {
-            authorities.add(new SimpleGrantedAuthority(role.getRoleId())); // e.g. "67ee..."
-            authorities.add(new SimpleGrantedAuthority(role.getName())); // e.g. "Admin"
+            authorities.add(new SimpleGrantedAuthority(role.getName()));
         } else {
             authorities.add(new SimpleGrantedAuthority("ROLE_UNKNOWN"));
         }

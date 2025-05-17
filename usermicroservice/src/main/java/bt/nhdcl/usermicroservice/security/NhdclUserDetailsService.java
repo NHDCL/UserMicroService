@@ -16,7 +16,6 @@ public class NhdclUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository; // Use UserRepository for MongoDB
 
-    @Autowired
     public NhdclUserDetailsService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
@@ -27,14 +26,7 @@ public class NhdclUserDetailsService implements UserDetailsService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
-        // Create a list of authorities with both roleId and roleName
-        List<GrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(user.getRole().getRoleId()), // Role ID
-                new SimpleGrantedAuthority(user.getRole().getName()) // Role Name
-
-        );
-
         // Return Spring Security's User object with email, password, and authorities
-        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), authorities);
+        return new NhdclUserDetails(user);
     }
 }
