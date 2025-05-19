@@ -48,35 +48,35 @@ public class NhdclSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/keep-alive").permitAll()
 
                         // Allow all operations on Users for Admin only
-                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{id}").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/image").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/{id}").permitAll()
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/{id}").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.GET, "/api/users/checkDuplicateEmail").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/{id}/enabled").permitAll()
 
                         // Allow all operations on Academies
-                        .requestMatchers(HttpMethod.POST, "/api/academies").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/academies").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.GET, "/api/academies").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/academies/{id}").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/academies/{id}").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/academies/{id}").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/academies/{id}").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.DELETE, "/api/academies/{id}").hasAuthority("Admin")
 
                         // Allow all operations on Roles
-                        .requestMatchers(HttpMethod.POST, "/api/roles").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/roles").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.GET, "/api/roles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/roles/{id}").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/roles/{id}").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/roles/{id}").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/roles/{id}").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.DELETE, "/api/roles/{id}").hasAuthority("Admin")
 
                         // Allow all operations on Departments
-                        .requestMatchers(HttpMethod.POST, "/api/departments").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/departments").hasAuthority("Admin")
                         .requestMatchers(HttpMethod.GET, "/api/departments").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/departments/{id}").permitAll()
-                        .requestMatchers(HttpMethod.PUT, "/api/departments/{id}").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/departments/{id}").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/departments/{id}").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.DELETE, "/api/departments/{id}").hasAuthority("Admin")
 
                         // Allow all operation on Emails
                         .requestMatchers(HttpMethod.POST, "/api/users/forgot-password").permitAll()
