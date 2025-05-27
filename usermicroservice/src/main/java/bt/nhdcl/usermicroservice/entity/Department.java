@@ -21,7 +21,7 @@ public class Department {
         this.name = name;
         this.description = description;
     }
-
+ 
     // Getters
     public String getDepartmentId() {
         return departmentId;

@@ -12,7 +12,6 @@ public class User {
     @Id
     private String userId; // MongoDB ID (stored as a String)
     private String employeeId;
-
     private String email;
     private String password;
     private boolean enabled;
