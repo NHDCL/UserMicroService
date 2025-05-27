@@ -48,7 +48,7 @@ public class NhdclSecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/keep-alive").permitAll()
 
                         // Allow all operations on Users for Admin only
-                        .requestMatchers(HttpMethod.POST, "/api/users").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{id}").permitAll()
@@ -65,7 +65,7 @@ public class NhdclSecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/academies/{id}").hasAuthority("Admin")
 
                         // Allow all operations on Roles
-                        .requestMatchers(HttpMethod.POST, "/api/roles").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.POST, "/api/roles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/roles").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/roles/{id}").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/roles/{id}").hasAuthority("Admin")
