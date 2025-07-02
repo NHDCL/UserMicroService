@@ -53,7 +53,7 @@ public class NhdclSecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/users/email").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/{id}").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/image").permitAll()
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/{id}").hasAuthority("Admin")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/{id}").hasAnyAuthority("Super Admin","Admin")
                         .requestMatchers(HttpMethod.GET, "/api/users/checkDuplicateEmail").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/{id}/enabled").permitAll()
 
